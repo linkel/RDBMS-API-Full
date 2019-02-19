@@ -26,6 +26,44 @@ server.post('/api/cohorts', (req, res) => {
     }
   })
 
+server.get('/api/cohorts', (req, res) => {
+    db("cohorts")
+    .then(cohorts => {
+        res.status(200).json(cohorts);
+    })
+    .catch(err => {
+        res.status(500).json({error: "Failed to get from db."})
+    })
+})
+
+server.get('/api/cohorts/:id', (req,res) => {
+    const id = req.params.id;
+    db("cohorts").where("id", id)
+    .then(cohort => {
+        if (cohort.length < 1) {
+            res.status(404).json({error: `ID ${id} does not exist in the db.`})
+        } else {
+            res.status(200).json(cohort);
+        }
+    })
+    .catch(err => {
+        res.status(500).json({error : "Could not GET from db."})
+    })
+})
+
+server.get('/api/cohorts/:id/students', (req,res) => {
+    const id = req.params.id;
+    db("students").join('cohorts','students.cohort_id', "=", 'cohorts.id')
+    .select("students.name","students.cohort_id","students.id").where("cohorts.id",id)
+    .then(students => {
+        res.status(200).json(students)
+    })
+    .catch(err => {
+        console.log(err)
+        res.status(500).json({error:"Could not get students of cohort"})
+    })
+})
+
 const port = 3300;
 server.listen(port, function() {
     console.log(`\n=== Web API Listening on http://localhost:${port} ===\n`);
