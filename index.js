@@ -72,10 +72,15 @@ server.put("/api/cohorts/:id", (req, res) => {
     } else {
       db("cohorts").where("id",id).update(cohort)
       .then(ids => {
-        res.status(200).json({message: `Successfully updated cohort with ID ${id}`});
+        if (ids) {
+            res.status(200).json({message: `Successfully updated cohort with ID ${id}`});
+        } else {
+            res.status(404).json({error: `Student with ID ${id} does not exist!`})
+        }
+       
       })
       .catch(err => {
-        res.status(500).json({error: "Failed to update db."});
+        res.status(500).json({error: "Failed to update db. Does your id exist?"});
       })
     }
 })
@@ -92,6 +97,89 @@ server.delete("/api/cohorts/:id", (req, res) => {
     })
     .catch(err => {
         res.status(500).json({error : "Could not DELETE from db."})
+    })
+})
+
+// STUDENTS DB
+
+server.post("/api/students", (req, res) => {
+    const student = req.body
+    if (!student.name || !student.cohort_id) {
+        res.status(500).json({error: "Please provide both a name and a cohort_id for the student."});
+      } else {
+        db("students").insert(student) // I used different syntax here compared to the cohorts DB to compare
+        .then(response => {
+            res.status(201).json({message: "Successfully added new student."})
+        })
+        .catch(err => {
+            console.log(err)
+            res.status(500).json({error: "Unable to post to students DB."})
+        })
+
+      }
+})
+
+server.get('/api/students', (req,res) => {
+    db("students")
+    .then(response => {
+        res.status(200).json(response)
+    })
+    .catch(err => {
+        res.status(500).json({error: "Could not GET from students db"})
+    })
+})
+
+server.get('/api/students/:id', (req, res) => {
+    const id = req.params.id;
+    db("students").join("cohorts","students.cohort_id","=","cohorts.id")
+    .select("students.id","students.name",(db.ref("cohorts.name").as("cohort"))).where("students.id", id)
+    .then(student => {
+        if (student.length < 1) {
+            res.status(404).json({error: `Student with id ${id} does not exist!`})
+        } else {
+            res.status(200).json(student)
+        }
+    })
+    .catch(err => {
+        console.log(err);
+        res.status(500).json({error: "Unable to get from students database"})
+    })
+});
+
+server.put('/api/students/:id', (req, res) => {
+    const id = req.params.id;
+    const student = req.body;
+    if (!student.name || !student.cohort_id) {
+        res.status(500).json({error: "Please provide both a name and a cohort_id for the student."});
+      } else {
+        db("students").where("id",id).update(student)
+        .then(response => {
+            if (response) {
+                res.status(200).json({message: `Successfully edited student with ID ${id}`})
+            } else {
+                res.status(404).json({error: `Student with ID ${id} does not exist.`})
+            }
+        })
+        .catch(err => {
+            console.log(err)
+            res.status(500).json({error: "Unable to update students DB."})
+        })
+      }
+})
+
+server.delete('/api/students/:id', (req, res) => {
+    const id = req.params.id;
+    db("students").where("id", id).del()
+    .then(response => {
+        if (response) {
+            res.status(200).json({message: `Successfully deleted student with ID ${id}`})
+        } else {
+            res.status(404).json({error: `Student with ID ${id} does not exist!`})
+        }
+    })
+    .catch(err => {
+        console.log(err);
+        res.status(500).json({error: "Unable to DELETE from students db."})
     })
 })
 
