@@ -64,6 +64,37 @@ server.get('/api/cohorts/:id/students', (req,res) => {
     })
 })
 
+server.put("/api/cohorts/:id", (req, res) => {
+    const id = req.params.id;
+    const cohort = req.body;
+    if (!cohort.name) {
+      res.status(500).json({error: "Please provide a name."});
+    } else {
+      db("cohorts").where("id",id).update(cohort)
+      .then(ids => {
+        res.status(200).json({message: `Successfully updated cohort with ID ${id}`});
+      })
+      .catch(err => {
+        res.status(500).json({error: "Failed to update db."});
+      })
+    }
+})
+
+server.delete("/api/cohorts/:id", (req, res) => {
+    const id = req.params.id;
+    db("cohorts").where("id", id).del()
+    .then(success => {
+        if (success) {
+            res.status(200).json({message: `Successfully deleted cohort with ID ${id}`});
+        } else {
+            res.status(404).json({error: `ID ${id} does not exist in the db.`})
+        }
+    })
+    .catch(err => {
+        res.status(500).json({error : "Could not DELETE from db."})
+    })
+})
+
 const port = 3300;
 server.listen(port, function() {
     console.log(`\n=== Web API Listening on http://localhost:${port} ===\n`);
